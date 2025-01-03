@@ -51,6 +51,7 @@ public class SqlServerConnectorConfig extends HistorizedRelationalDatabaseConnec
     private static final String READ_ONLY_INTENT = "ReadOnly";
     private static final String APPLICATION_INTENT_KEY = "database.applicationIntent";
     private static final int DEFAULT_QUERY_FETCH_SIZE = 10_000;
+    private static final int DEFAULT_MAX_CHANGES_PER_QUERY = 0;
 
     /**
      * The set of predefined SnapshotMode options or aliases.
@@ -398,6 +399,14 @@ public class SqlServerConnectorConfig extends HistorizedRelationalDatabaseConnec
             .withImportance(Importance.LOW)
             .withDescription("This property can be used to enable/disable an optimization that prevents querying the cdc tables on LSNs not correlated to changes.");
 
+    public static final Field MAX_CHANGES_PER_QUERY = Field.create("max.changes.per.query")
+            .withDisplayName("Max changes per query")
+            .withType(Type.INT)
+            .withDefault(DEFAULT_MAX_CHANGES_PER_QUERY)
+            .withImportance(Importance.MEDIUM)
+            .withDescription(
+                    "The maximum number of changes that can be returned in a single query. Defaults to 0, meaning no limit. Only in effect if `data.query.mode` is set to `direct`. Can be used to reduce memory footprint when retrieving changes for an LSN range with a large number of changes. Results in data being dispatched in change LSN order at table level rather than being ordered across all tables.");
+
     public static final Field MAX_TRANSACTIONS_PER_ITERATION = Field.create(MAX_TRANSACTIONS_PER_ITERATION_CONFIG_NAME)
             .withDisplayName("Max transactions per iteration")
             .withDefault(DEFAULT_MAX_TRANSACTIONS_PER_ITERATION)
@@ -525,6 +534,7 @@ public class SqlServerConnectorConfig extends HistorizedRelationalDatabaseConnec
     private final boolean optionRecompile;
     private final int queryFetchSize;
     private final DataQueryMode dataQueryMode;
+    private final int maxChangesPerQuery;
 
     public SqlServerConnectorConfig(Configuration config) {
         super(
@@ -567,6 +577,9 @@ public class SqlServerConnectorConfig extends HistorizedRelationalDatabaseConnec
         this.optionRecompile = config.getBoolean(INCREMENTAL_SNAPSHOT_OPTION_RECOMPILE);
 
         this.dataQueryMode = DataQueryMode.parse(config.getString(DATA_QUERY_MODE), DATA_QUERY_MODE.defaultValueAsString());
+
+        this.maxChangesPerQuery = config.getInteger(MAX_CHANGES_PER_QUERY);
+
         this.snapshotLockingMode = SnapshotLockingMode.parse(config.getString(SNAPSHOT_LOCKING_MODE), SNAPSHOT_LOCKING_MODE.defaultValueAsString());
     }
 
@@ -705,6 +718,10 @@ public class SqlServerConnectorConfig extends HistorizedRelationalDatabaseConnec
 
     public DataQueryMode getDataQueryMode() {
         return dataQueryMode;
+    }
+
+    public int getMaxChangesPerQuery() {
+        return maxChangesPerQuery;
     }
 
     private static int validateDatabaseNames(Configuration config, Field field, Field.ValidationOutput problems) {

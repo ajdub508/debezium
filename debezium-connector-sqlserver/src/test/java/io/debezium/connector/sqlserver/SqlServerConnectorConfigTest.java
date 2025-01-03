@@ -105,6 +105,15 @@ public class SqlServerConnectorConfigTest {
         assertEquals(connectorConfig.getQueryFetchSize(), 20_000);
     }
 
+    @Test
+    public void validMaxChangesPerQuery() {
+        final SqlServerConnectorConfig connectorConfig = new SqlServerConnectorConfig(
+                defaultConfig()
+                        .with(SqlServerConnectorConfig.MAX_CHANGES_PER_QUERY, 500)
+                        .build());
+        assertEquals(connectorConfig.getMaxChangesPerQuery(), 500);
+    }
+
     private Configuration.Builder defaultConfig() {
         return Configuration.create()
                 .with(CommonConnectorConfig.TOPIC_PREFIX, "server")

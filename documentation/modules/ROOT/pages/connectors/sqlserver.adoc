@@ -3222,6 +3222,10 @@ After the snapshot completes, this entry is removed.
 No entry is created for the signal to close the snapshot window.
 Set this option to prevent rapid growth of the signaling data collection.
 
+|[[sqlserver-property-max-changes-per-query]]<<sqlserver-property-max-changes-per-querying, `+max.changes.per.query+`>>
+|0
+|Specifies the maximum number of changes to fetch per query. 0 means no limit. Value only has an effect `data.query.mode` is set to `direct`. When in effect, data will be retrieved and dispatched in change LSN order for each tablea rather than being ordered by LSN across all tables. Changes will be retrieved and distpached in batches sized according to `max.changes.per.query` until all changes have been retrieved for the iteration. The purpose of this setting is to avoid spikes in memory usage when retrieving changes for an LSN range that has a very large number of changes.
+
 |[[sqlserver-property-max-iteration-transactions]]<<sqlserver-property-max-iteration-transactions, `+max.iteration.transactions+`>>
 |500
 |Specifies the maximum number of transactions per iteration to be used to reduce the memory footprint when streaming changes from multiple tables in a database.
