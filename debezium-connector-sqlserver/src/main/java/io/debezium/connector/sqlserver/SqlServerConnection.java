@@ -81,7 +81,10 @@ public class SqlServerConnection extends JdbcConnection {
     private static final String GET_ALL_CHANGES_FOR_TABLE_FROM_FUNCTION = "FROM [#db].cdc.[fn_cdc_get_all_changes_#table](?, ?, N'all update old')";
     private static final String GET_ALL_CHANGES_FOR_TABLE_FROM_DIRECT = "FROM [#db].cdc.[#table]";
     private static final String GET_ALL_CHANGES_FOR_TABLE_ORDER_BY = "ORDER BY [__$start_lsn] ASC, [__$seqval] ASC, [__$operation] ASC";
-
+    private static final String GET_ALL_CHANGES_FOR_TABLE_WITH_SELECT_TABLE_LEVEL_ORDERING = "WITH change_lsns as (SELECT DISTINCT TOP (?) [__$seqval] as change_lsn";
+    private static final String GET_ALL_CHANGES_FOR_TABLE_WITH_WHERE_TABLE_LEVEL_ORDERING = "WHERE [__$start_lsn] BETWEEN ? AND ? AND [__$seqval] > ?";
+    private static final String GET_ALL_CHANGES_FOR_TABLE_WITH_ORDER_BY_TABLE_LEVEL_ORDERING = "ORDER BY [__$seqval] ASC)";
+    private static final String GET_ALL_CHANGES_FOR_TABLE_INNER_JOIN_TABLE_LEVEL_ORDERING = "INNER JOIN change_lsns as chg ON [__$seqval] = chg.change_lsn";
     /**
      * Queries the list of captured column names and their change table identifiers in the given database.
      */
@@ -172,16 +175,33 @@ public class SqlServerConnection extends JdbcConnection {
 
     private String buildGetAllChangesForTableQuery(SqlServerConnectorConfig.DataQueryMode dataQueryMode,
                                                    Set<Envelope.Operation> skippedOperations) {
-        String result = GET_ALL_CHANGES_FOR_TABLE_SELECT + " ";
+        String result = "";
         List<String> where = new LinkedList<>();
+
         switch (dataQueryMode) {
             case FUNCTION:
+                result += GET_ALL_CHANGES_FOR_TABLE_SELECT + " ";
                 result += GET_ALL_CHANGES_FOR_TABLE_FROM_FUNCTION + " ";
                 break;
             case DIRECT:
-                result += GET_ALL_CHANGES_FOR_TABLE_FROM_DIRECT + " ";
-                where.add("[__$start_lsn] >= ?");
-                where.add("[__$start_lsn] <= ?");
+                if (config.getMaxChangesPerQuery() > 0) {
+                    result += GET_ALL_CHANGES_FOR_TABLE_WITH_SELECT_TABLE_LEVEL_ORDERING + " ";
+                    result += GET_ALL_CHANGES_FOR_TABLE_FROM_DIRECT + " ";
+                    result += GET_ALL_CHANGES_FOR_TABLE_WITH_WHERE_TABLE_LEVEL_ORDERING + " ";
+                    result += GET_ALL_CHANGES_FOR_TABLE_WITH_ORDER_BY_TABLE_LEVEL_ORDERING + " ";
+                    result += GET_ALL_CHANGES_FOR_TABLE_SELECT + " ";
+                    result += GET_ALL_CHANGES_FOR_TABLE_FROM_DIRECT + " ";
+                    result += GET_ALL_CHANGES_FOR_TABLE_INNER_JOIN_TABLE_LEVEL_ORDERING + " ";
+                    where.add("[__$start_lsn] >= ?");
+                    where.add("[__$start_lsn] <= ?");
+                    where.add("[__$seqval] > ?");
+                }
+                else {
+                    result += GET_ALL_CHANGES_FOR_TABLE_SELECT + " ";
+                    result += GET_ALL_CHANGES_FOR_TABLE_FROM_DIRECT + " ";
+                    where.add("[__$start_lsn] >= ?");
+                    where.add("[__$start_lsn] <= ?");
+                }
                 break;
         }
 
