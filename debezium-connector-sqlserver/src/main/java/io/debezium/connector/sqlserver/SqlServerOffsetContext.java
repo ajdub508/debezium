@@ -32,6 +32,8 @@ public class SqlServerOffsetContext extends CommonOffsetContext<SourceInfo> {
      * The index of the current event within the current transaction.
      */
     private long eventSerialNo;
+    private Lsn restartCommitLsn;
+    private Lsn restartChangeLsn;
 
     public SqlServerOffsetContext(SqlServerConnectorConfig connectorConfig, TxLogPosition position, SnapshotType snapshot,
                                   boolean snapshotCompleted, long eventSerialNo, TransactionContext transactionContext,
@@ -57,7 +59,7 @@ public class SqlServerOffsetContext extends CommonOffsetContext<SourceInfo> {
     public SqlServerOffsetContext(SqlServerConnectorConfig connectorConfig, TxLogPosition position, SnapshotType snapshot, boolean snapshotCompleted) {
         this(connectorConfig, position, snapshot, snapshotCompleted, 1, new TransactionContext(), new SignalBasedIncrementalSnapshotContext<>());
     }
-
+    // TODO ask adam about this. Do we want to add restartCommitLsn and restartChangeLsn here?
     @Override
     public Map<String, ?> getOffset() {
         if (getSnapshot().isPresent()) {
@@ -104,6 +106,18 @@ public class SqlServerOffsetContext extends CommonOffsetContext<SourceInfo> {
         return snapshotCompleted;
     }
 
+    public void setRestartChangePosition(TxLogPosition position) {
+        this.restartChangeLsn = position.getInTxLsn();
+        this.restartCommitLsn = position.getCommitLsn();
+    }
+
+    public Lsn getRestartChangeLsn(){
+        return restartChangeLsn;
+    }
+    public Lsn getRestartCommitLsn(){
+        return restartCommitLsn;
+    }
+    
     public static class Loader implements OffsetContext.Loader<SqlServerOffsetContext> {
 
         private final SqlServerConnectorConfig connectorConfig;
@@ -116,6 +130,9 @@ public class SqlServerOffsetContext extends CommonOffsetContext<SourceInfo> {
         public SqlServerOffsetContext load(Map<String, ?> offset) {
             final Lsn changeLsn = Lsn.valueOf((String) offset.get(SourceInfo.CHANGE_LSN_KEY));
             final Lsn commitLsn = Lsn.valueOf((String) offset.get(SourceInfo.COMMIT_LSN_KEY));
+            final Lsn restartChangeLsn = Lsn.valueOf((String) offset.get(SourceInfo.RESTART_CHANGE_LSN_KEY));
+            final Lsn restartCommitLsn = Lsn.valueOf((String) offset.get(SourceInfo.RESTART_COMMIT_LSN_KEY));
+
             final SnapshotType snapshot = loadSnapshot(offset).orElse(null);
             final boolean snapshotCompleted = loadSnapshotCompleted(offset);
 

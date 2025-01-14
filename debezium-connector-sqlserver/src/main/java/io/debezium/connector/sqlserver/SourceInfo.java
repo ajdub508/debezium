@@ -24,6 +24,8 @@ public class SourceInfo extends BaseSourceInfo {
     public static final String CHANGE_LSN_KEY = "change_lsn";
     public static final String COMMIT_LSN_KEY = "commit_lsn";
     public static final String EVENT_SERIAL_NO_KEY = "event_serial_no";
+    public static final String RESTART_COMMIT_LSN_KEY = "restart_commit_lsn";
+    public static final String RESTART_CHANGE_LSN_KEY = "restart_change_lsn";
 
     private Lsn changeLsn;
     private Lsn commitLsn;
