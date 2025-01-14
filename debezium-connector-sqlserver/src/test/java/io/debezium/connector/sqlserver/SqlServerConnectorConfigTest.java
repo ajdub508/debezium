@@ -114,6 +114,44 @@ public class SqlServerConnectorConfigTest {
         assertEquals(connectorConfig.getMaxChangesPerQuery(), 500);
     }
 
+    @Test
+    public void validTableLevelOrderingTrue() {
+        final SqlServerConnectorConfig connectorConfig = new SqlServerConnectorConfig(
+                defaultConfig()
+                        .with(SqlServerConnectorConfig.DATA_QUERY_MODE, SqlServerConnectorConfig.DataQueryMode.DIRECT)
+                        .with(SqlServerConnectorConfig.MAX_CHANGES_PER_QUERY, 500)
+                        .build());
+        assertTrue(connectorConfig.getTableLevelOrdering());
+    }
+
+    @Test
+    public void validTableLevelOrderingFalseNoMaxChanges() {
+        final SqlServerConnectorConfig connectorConfig = new SqlServerConnectorConfig(
+                defaultConfig()
+                        .with(SqlServerConnectorConfig.DATA_QUERY_MODE, SqlServerConnectorConfig.DataQueryMode.DIRECT)
+                        .build());
+        assertFalse(connectorConfig.getTableLevelOrdering());
+    }
+
+    @Test
+    public void validTableLevelOrderingFalseFunctionMaxChanges() {
+        final SqlServerConnectorConfig connectorConfig = new SqlServerConnectorConfig(
+                defaultConfig()
+                        .with(SqlServerConnectorConfig.DATA_QUERY_MODE, SqlServerConnectorConfig.DataQueryMode.FUNCTION)
+                        .with(SqlServerConnectorConfig.MAX_CHANGES_PER_QUERY, 500)
+                        .build());
+        assertFalse(connectorConfig.getTableLevelOrdering());
+    }
+
+    @Test
+    public void validTableLevelOrderingFalseFunctionNoMaxChanges() {
+        final SqlServerConnectorConfig connectorConfig = new SqlServerConnectorConfig(
+                defaultConfig()
+                        .with(SqlServerConnectorConfig.DATA_QUERY_MODE, SqlServerConnectorConfig.DataQueryMode.FUNCTION)
+                        .build());
+        assertFalse(connectorConfig.getTableLevelOrdering());
+    }
+
     private Configuration.Builder defaultConfig() {
         return Configuration.create()
                 .with(CommonConnectorConfig.TOPIC_PREFIX, "server")
