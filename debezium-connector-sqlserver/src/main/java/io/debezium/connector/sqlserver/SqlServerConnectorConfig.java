@@ -724,6 +724,10 @@ public class SqlServerConnectorConfig extends HistorizedRelationalDatabaseConnec
         return maxChangesPerQuery;
     }
 
+    public boolean getTableLevelOrdering() {
+        return getDataQueryMode() == DataQueryMode.DIRECT && getMaxChangesPerQuery() > 0;
+    }
+
     private static int validateDatabaseNames(Configuration config, Field field, Field.ValidationOutput problems) {
         String databaseNames = config.getString(field);
         int count = 0;

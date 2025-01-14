@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.debezium.connector.sqlserver.SqlServerConnectorConfig.DataQueryMode;
 import io.debezium.pipeline.ErrorHandler;
 import io.debezium.pipeline.EventDispatcher;
 import io.debezium.pipeline.notification.Notification;
@@ -232,6 +233,11 @@ public class SqlServerStreamingChangeEventSource implements StreamingChangeEvent
                     collectChangeTablesWithKnownStopLsn(partition, tablesSlot.get());
                 }
                 try {
+
+                    if (connectorConfig.getDataQueryMode() == DataQueryMode.DIRECT && connectorConfig.getMaxChangesPerQuery() > 0) {
+                        return streamTableLevelOrdering(databaseName, tablesSlot.get(), fromLsn, toLsn);
+                    }
+
                     dataConnection.getChangesForTables(databaseName, tablesSlot.get(), fromLsn, toLsn, resultSets -> {
 
                         long eventSerialNoInInitialTx = 1;
@@ -365,6 +371,11 @@ public class SqlServerStreamingChangeEventSource implements StreamingChangeEvent
     public SqlServerOffsetContext getOffsetContext() {
         return effectiveOffset;
     }
+
+    private boolean streamTableLevelOrdering(String databaseName, SqlServerChangeTable[] tablesSlot, Lsn fromLsn, Lsn toLsn) {
+
+        return true;
+    };
 
     private void collectChangeTablesWithKnownStopLsn(SqlServerPartition partition, SqlServerChangeTable[] tables) {
         for (SqlServerChangeTable table : tables) {
